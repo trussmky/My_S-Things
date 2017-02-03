@@ -1,5 +1,5 @@
 /**
- *  Insteon Dimmer Switch
+ *  Insteon On/Off Switch
  *  Original Author     : ethomasii@gmail.com
  *  Creation Date       : 2013-12-08
  *
@@ -34,11 +34,11 @@ preferences {
     input("port", "text", title: "Port", description: "The hub port.")
     input("username", "text", title: "Username", description: "The hub username (found in app)")
     input("password", "text", title: "Password", description: "The hub password (found in app)")
+    input("status_site","text", title: "Website", description: "URL of Status program", defaultValue: "st.idealerror.com")
 } 
  
 metadata {
-    definition (name: "Insteon Dimmer Switch or Plug", author: "idealerror", oauth: true) {
-        capability "Switch Level"
+    definition (name: "Insteon On/Off Switch or Plug", author: "idealerror", oauth: true) {
         capability "Polling"
         capability "Switch"
         capability "Refresh"
@@ -51,29 +51,21 @@ metadata {
     // UI tile definitions
     tiles(scale:2) {
        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            
-           tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-               attributeState "level", action:"switch level.setLevel"
-           }
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
 
-        }
+		}
         
         standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
 
-        valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "level", label:'${currentValue} %', unit:"%", backgroundColor:"#ffffff"
-        }
-
-        main(["switch"])
-        details(["switch", "level", "refresh"])
+		main(["switch"])
+		details(["switch", "refresh"])
     }
 }
 
@@ -83,9 +75,36 @@ def parse(String description) {
 
 def on() {
     log.debug "Turning device ON"
-    sendCmd("11", "FF")
+//removed to try new method
+//    sendCmd("11", "FF")
     sendEvent(name: "switch", value: "on");
     sendEvent(name: "level", value: 100, unit: "%")
+    
+// from local switch
+	def path = "/3?0262" + "${deviceid}" + "0f" + "11" + "FF" + "=I=3" 
+    log.debug "path is: ${path}"
+    
+    def userpassascii = "${username}:${password}"
+    	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
+    def headers = [:] //"HOST:"
+    headers.put("HOST", "$host:$port")
+    headers.put("Authorization", userpass)
+    
+    try {
+    def hubAction = new physicalgraph.device.HubAction(
+    	method: method,
+        path: path,
+        headers: headers
+        )
+        
+     }
+     
+     catch (Exception e) {
+     log.debug "Hit Exception on $hubAction"
+     log.debug e
+     }
+	log.debug "$method$path$headers"
+//	end from local switch     
 }
 
 def off() {
@@ -97,42 +116,35 @@ def off() {
 
 def setLevel(value) {
 
-    // log.debug "setLevel >> value: $value"
+	// log.debug "setLevel >> value: $value"
     
     // Max is 255
     def percent = value / 100
     def realval = percent * 255
-    def valueaux = realval as Integer
-    def level = Math.max(Math.min(valueaux, 255), 0)
-    if (level > 0) {
-        sendEvent(name: "switch", value: "on")
-    } else {
-        sendEvent(name: "switch", value: "off")
-    }
+	def valueaux = realval as Integer
+	def level = Math.max(Math.min(valueaux, 255), 0)
+	if (level > 0) {
+		sendEvent(name: "switch", value: "on")
+	} else {
+		sendEvent(name: "switch", value: "off")
+	}
     // log.debug "dimming value is $valueaux"
     log.debug "dimming to $level"
     dim(level,value)
 }
 
-def dim(level, real) {
-    String hexlevel = level.toString().format( '%02x', level.toInteger() )
-    // log.debug "Dimming to hex $hexlevel"
-    sendCmd("11",hexlevel)
-    sendEvent(name: "level", value: real, unit: "%")
-}
-
 def sendCmd(num, level)
 {
     log.debug "Sending Command"
-
-    // Will re-test this later
-//     sendHubCommand(new physicalgraph.device.HubAction("""GET /3?0262${settings.deviceid}0F${num}${level}=I=3 HTTP/1.1\r\nHOST: IP:PORT\r\nAuthorization: Basic B64STRING\r\n\r\n""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}"))
+//
+//sendHubCommand(new physicalgraph.device.HubAction("""${method} ${uri} HTTP/1.1\r\nHOST: ${settings.ip}:${settings.port}\r\n\r\n""",physicalgraph.device.Protocol.LAN,"${deviceNetworkId}"))
+//
+//from IdealError
+//sendHubCommand(new physicalgraph.device.HubAction("""GET /3?0262${settings.deviceid}0F${num}${level}=I=3 HTTP/1.1\r\nHOST: IP:PORT\r\nAuthorization: Basic B64STRING\r\n\r\n""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}"))
     httpGet("http://${settings.username}:${settings.password}@${settings.host}:${settings.port}//3?0262${settings.deviceid}0F${num}${level}=I=3") {response -> 
         def content = response.data
         
-        log.info "num: ${num} level: ${level}"
-        
-         log.debug "Content: ${response.data}"
+        // log.debug content
     }
     log.debug "Command Completed"
 }
@@ -166,16 +178,17 @@ def getStatus() {
     // This site is not logging anything, it's strictly a pass through.
 
     def params = [
-//        uri: "http://st.idealerror.com/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
-        uri: "http://192.168.14.113/HubStatus.php/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
+    //3rd party site
+	//    uri: "http://st.idealerror.com/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
+	// local Site
+	uri: "http://${settings.status_site}/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
 
-
-]
+    ]
 
     try {
         httpPost(params) { resp ->
 
-            def jsonSlurper = new JsonSlurper()
+			def jsonSlurper = new JsonSlurper()
             def object = jsonSlurper.parseText("${resp.data}")
 
             log.debug "Percent: ${object.percent}"

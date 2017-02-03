@@ -91,7 +91,7 @@ metadata {
 
 def take() {
 	log.debug "Taking picture"
-	cameraCmd("/SnapShotJPEG?Resolution=320x240&Quality=Motion")
+	cameraCmd("/SnapshotJPEG?Resolution=320x240&Quality=Motion")
 }
 def home() {
 	log.debug "Moving to Home position"
@@ -169,7 +169,7 @@ def cameraCmd(String varCommand) {
 			headers: headers
 		)
 		hubAction.options = [outputMsgToS3:true]
-		log.info "hub action ${hubAction}"
+		log.debug hubAction
 		hubAction
     }
     catch (Exception e) {
@@ -177,16 +177,24 @@ def cameraCmd(String varCommand) {
     }
 }
 
-/*
 def parse(String description) {
     log.debug "Parsing '${description}'"
     def map = [:]
 	def retResult = []
 	def descMap = parseDescriptionAsMap(description)
+    log.info "bucket '${descMap.bucket}'"
+    log.info "key '${descMap.key}'"
+    
 	//Image
-	if (descMap["bucket"] && descMap["key"]) {
-		putImageInS3(descMap)
+//	if (descMap["bucket"] && descMap["key"]) {
+  	if (descMap["key"]) {
+//		putImageInS3(descMap)
+		try {
+        	storeTemporaryImage(descMap.key,getPictureName())
+        } catch(Exception e) {
+        	log.error e
         }
+	}
     else if (descMap["headers"] && descMap["body"]){
     	def body = new String(descMap["body"].decodeBase64())
         log.debug "Body: ${body}"
@@ -195,9 +203,7 @@ def parse(String description) {
 		log.debug "PARSE FAILED FOR: '${description}'"
     }
 }
-
-
-
+/*
 def putImageInS3(map) {
 	log.debug "firing s3"
     def s3ObjectContent
@@ -219,27 +225,6 @@ def putImageInS3(map) {
 	}
 }
 */
-
-
-def parse (String description) {	//new method???
-	log.debug "Parsing '${description}'"
-    
-    def map = stringToMap(description)
-    log.debug "map: ${map}"
-    
-	def result = []
-
-	if (map.key) {
-    	try {
-        	storeTemporaryImage(map.key, getPictureName())
-            } catch(Exception e) {
-            	log.error "store Image: ${e}"
-            }
-      }
-    result
-}
-
-/*
 def parseDescriptionAsMap(description) {
 	description.split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
@@ -249,11 +234,11 @@ def parseDescriptionAsMap(description) {
 
 private getPictureName() {
 	def pictureUuid = java.util.UUID.randomUUID().toString().replaceAll('-', '')
-    log.debug ("Picture id", pictureUuid)
+    log.debug pictureUuid
     def picName = device.deviceNetworkId.replaceAll(':', '') + "_$pictureUuid" + ".jpg"
 	return picName
 }
-*/
+
 private String convertIPtoHex(ipAddress) { 
     String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     log.debug "IP address entered is $ipAddress and the converted hex code is $hex"

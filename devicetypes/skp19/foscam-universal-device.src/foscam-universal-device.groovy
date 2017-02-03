@@ -176,7 +176,7 @@ def take() {
 		hubGet("cmd=snapPicture2")
     }
     else {
-    	hubGet("/snapshot.cgi?","&next_url=test1")
+    	hubGet("/snapshot.cgi?","&next_url=")
     }
 }
 //END TAKE PICTURE
@@ -431,7 +431,7 @@ private hubGet(def apiCommand, def apiVar) {
         path: uri,
         headers: [HOST:getHostAddress()]
     )
-    
+    log.debug hubAction
     if(device.currentValue("hubactionMode") == "s3") {
         hubAction.options = [outputMsgToS3:true]
         sendEvent(name: "hubactionMode", value: "local");
@@ -442,13 +442,15 @@ private hubGet(def apiCommand, def apiVar) {
 
 //Parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+//	log.debug "Parsing '${description}'"
+//    log.info "parsing '${description}'"
     
 //    def map = [:]
     def retResult = []
 //    def descMap = parseDescriptionAsMap(description)
 	def map = stringToMap(description)        
     log.debug map
+    //log.info "map '${map}'"
     
     //Image
 //	if (descMap["bucket"] && descMap["key"]) {
