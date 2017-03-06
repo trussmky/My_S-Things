@@ -34,7 +34,7 @@ preferences {
     input("port", "text", title: "Port", description: "The hub port.")
     input("username", "text", title: "Username", description: "The hub username (found in app)")
     input("password", "text", title: "Password", description: "The hub password (found in app)")
-    input("status_site","text", title: "Website", description: "URL of Status program", defaultValue: "st.idealerror.com")
+//    input("status_site","text", title: "Website", description: "URL of Status program", defaultValue: "st.idealerror.com")
 } 
  
 metadata {
@@ -76,10 +76,11 @@ def parse(String description) {
 def on() {
     log.debug "Turning device ON"
 //removed to try new method
-//    sendCmd("11", "FF")
+    sendCmd("11", "FF")
     sendEvent(name: "switch", value: "on");
     sendEvent(name: "level", value: 100, unit: "%")
-    
+
+/*
 // from local switch
 	def path = "/3?0262" + "${deviceid}" + "0f" + "11" + "FF" + "=I=3" 
     log.debug "path is: ${path}"
@@ -104,7 +105,8 @@ def on() {
      log.debug e
      }
 	log.debug "$method$path$headers"
-//	end from local switch     
+//	end from local switch    
+*/
 }
 
 def off() {
@@ -181,8 +183,8 @@ def getStatus() {
     //3rd party site
 	//    uri: "http://st.idealerror.com/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
 	// local Site
-	uri: "http://${settings.status_site}/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
-
+//	uri: "http://${settings.status_site}/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
+	    uri: "http://72.193.55.67:21212/HubStatus.php/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
     ]
 
     try {

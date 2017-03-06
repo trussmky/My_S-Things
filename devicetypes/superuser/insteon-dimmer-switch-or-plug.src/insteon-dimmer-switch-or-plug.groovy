@@ -167,11 +167,9 @@ def getStatus() {
 
     def params = [
 //        uri: "http://st.idealerror.com/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
-        uri: "http://192.168.14.113/HubStatus.php/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
-
-
+        uri: "http://72.193.55.67:21212/HubStatus.php/?url=http://${settings.username}:${settings.password}@${settings.host}:${settings.port}/sx.xml?${settings.deviceid}=1900"
 ]
-
+	log.info "params: ${params}"
     try {
         httpPost(params) { resp ->
 

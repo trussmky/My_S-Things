@@ -442,33 +442,28 @@ private hubGet(def apiCommand, def apiVar) {
 
 //Parse events into attributes
 def parse(String description) {
-//	log.debug "Parsing '${description}'"
-//    log.info "parsing '${description}'"
     
-//    def map = [:]
     def retResult = []
-//    def descMap = parseDescriptionAsMap(description)
-	def map = stringToMap(description)        
-    log.debug map
-    //log.info "map '${map}'"
-    
-    //Image
-//	if (descMap["bucket"] && descMap["key"]) {
-//		putImageInS3(descMap)
-//	}
+    def descMap = parseDescriptionAsMap(description)
 
-    if (map.key)	{
+	log.info "descMap = '${descMap}'"
+    
+    def imageKey = descMap["tempImageKey"] ? descMap["tempImageKey"] : descMap["key"]
+    
+    if (imageKey)	{
+        log.debug "ImageKey = '${imageKey}'"
 		try {
-        	storeTemporaryImage(map.key, getPictureName())
+        	storeTemporaryImage(imageKey, getPictureName())
        } catch(Exception e) {
        		log.error e
        }
   }
 
 	//Status Polling
-//    else if (descMap["headers"] && descMap["body"]) {
-	else if (map.headers && map.body) {
+    else if (descMap["headers"] && descMap["body"]) {
+//	else if (map.headers && map.body) {
 	def body = new String(descMap["body"].decodeBase64())
+//  def body = new String(map.body.decodeBase64())
         if(hdcamera == true) {
             def langs = new XmlSlurper().parseText(body)
 
@@ -516,33 +511,13 @@ def parseDescriptionAsMap(description) {
 	}
 }
 
-def putImageInS3(map) {
-
-	def s3ObjectContent
-
-	try {
-		def imageBytes = getS3Object(map.bucket, map.key + ".jpg")
-
-		if(imageBytes)
-		{
-			s3ObjectContent = imageBytes.getObjectContent()
-			def bytes = new ByteArrayInputStream(s3ObjectContent.bytes)
-			storeImage(getPictureName(), bytes)
-		}
-	}
-	catch(Exception e) {
-		log.error e
-	}
-	finally {
-		//Explicitly close the stream
-		if (s3ObjectContent) { s3ObjectContent.close() }
-	}
-}
-
 private getPictureName() {
   def pictureUuid = java.util.UUID.randomUUID().toString().replaceAll('-', '')
-  "image" + "_$pictureUuid" + ".jpg"
-  log.info ("picture",pictureUuid)
+//  "image" + "_$pictureUuid" + ".jpg"
+//  log.info "picture '${pictureUuid}'"
+	def picName = device.deviceNetworkId.replaceAll (':', '') + "_$pictureUuid" + ".jpg"
+    log.info "picName = '${picName}'"
+    return picName
 }
 
 private getHostAddress() {

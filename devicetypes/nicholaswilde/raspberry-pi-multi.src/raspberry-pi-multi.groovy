@@ -35,40 +35,36 @@ preferences {
 }
 
 metadata {
-	definition (name: "Raspberry Pi", namespace: "nicholaswilde", author: "Nicholas Wilde") {
+	definition (name: "Raspberry Pi Multi", namespace: "nicholaswilde", author: "Nicholas Wilde") {
 		capability "Polling"
 		capability "Refresh"
 		capability "Temperature Measurement"
         capability "Switch"
         capability "Sensor"
-        capability "Actuator"
+        //capability "Actuator"
         capability "Contact Sensor"
-        capability "Motion Sensor"
         
         attribute "cpuPercentage", "string"
         attribute "memory", "string"
         attribute "diskUsage", "string"
-        
-        attribute "contact_5", "string"
-        attribute "contact_6", "string"
-        attribute "contact_13", "string"
-        attribute "contact_19", "string"
-        attribute "contact_26", "string"
+        attribute "fridge", "string"
+        attribute "fridgeTemp", "string"
+        attribute "fridgeHumid", "string"
+        attribute "cpuTemperature", "string"
+        attribute "SW1", "string"
         
         command "restart"
-        command "open_5"
-        command "close_5"
-        command "open_6"
-        command "close_6"
+        command "SW1_on"
+        command "SW1_off"
 	}
 
 	simulator {
 		// TODO: define status and reply messages here
 	}
 
-	tiles {
-		valueTile("temperature", "device.temperature", width: 1, height: 1) {
-            state "temperature", label:'${currentValue}° CPU', unit: "F",
+	tiles(scale: 2) {
+		valueTile("cpuTemperature", "device.cpuTemperature", width: 1, height: 1) {
+            state "temperature", label:'${currentValue}° CPU', unit: "C",
             backgroundColors:[
                 [value: 25, color: "#153591"],
                 [value: 35, color: "#1e9cbb"],
@@ -79,10 +75,7 @@ metadata {
                 [value: 77, color: "#bc2323"]
             ]
         }
-        standardTile("button", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-			state "off", label: 'Off', icon: "st.Electronics.electronics18", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'On', icon: "st.Electronics.electronics18", backgroundColor: "#79b821", nextState: "off"
-		}
+
         valueTile("cpuPercentage", "device.cpuPercentage", inactiveLabel: false) {
         	state "default", label:'${currentValue}% CPU', unit:"Percentage",
             backgroundColors:[
@@ -119,46 +112,63 @@ metadata {
                 [value: 96, color: "#bc2323"]
             ]
         }
-        standardTile ("motion", "device.motion", width: 1, height: 1) {
-        	state("active", label: 'Motion', icon:"st.Kids.kids.14")
-            state("inactive", label: "No-Motion", icon: "st.Kids.kids.14")
+		valueTile("fridgeHumid", "device.fridgeHumid", width: 2, height: 1) {
+            state "default", label:'${currentValue}% Humid', unit: "Percent",
+            backgroundColors:[
+                [value: 20, color: "#bc2323"],
+                [value: 30, color: "#99ff66"],
+                [value: 40, color: "#90d2a7"],
+                [value: 50, color: "#33cc33"],
+                [value: 60, color: "#00cc00"],
+                [value: 70, color: "#99ff66"],
+                [value: 80, color: "#bc2323"]
+            ]
+        }
+		valueTile("temperature", "device.temperature", width: 2, height: 1) {
+            state "temperature", label:'${currentValue}° Wine', unit: "F",
+            backgroundColors:[
+                [value: 25, color: "#153591"],
+                [value: 47, color: "#1e9cbb"],
+                [value: 55, color: "#90d2a7"],
+                [value: 57, color: "#44b621"],
+                [value: 65, color: "#f1d801"],
+                [value: 68, color: "#d04e00"],
+                [value: 77, color: "#bc2323"]
+            ]
+        }
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+			state "off", label: 'Mode', icon: "st.Appliances.appliances6", backgroundColor: "#9de33b", action: "switch.on", nextState: "on"
+			state "on", label: 'Mode', icon: "st.Appliances.appliances6", backgroundColor: "#79b821", action: "switch.on", nextState: "off"
+		}
+        
+        standardTile("fridge", "device.fridge", width: 2, height: 2) {
+  		  	state "off", label: 'Idle', icon:"st.Weather.weather11", backgroundColor:"#ffffff"
+  		  	state "on", label: 'Cooling', icon:"st.Weather.weather7", backgroundColor:"#53a7c0"
+		}
+        
+        standardTile("SW1", "device.SW1", width: 2, height: 2) {
+        	state "off", label: 'On', icon: "st.contact.contact.closed", backgroundColor: "#ffffff", action: "SW1.off", nextState: "on"
+            state "on", label: 'Off', icon: "st.contact.contact.open", backgroundColor: "#53a7c0", action: "SW1.on", nextState: "off"
         }
         
-        standardTile("contact_5", "device.contact_5", width: 1, height: 1, canChangeIcon: true) {
-			state("closed", label:'5', icon:"st.contact.contact.closed", backgroundColor:"#79b821") //, action: "open_5")
-			state("open", label:'5', icon:"st.contact.contact.open", backgroundColor:"#bc2323") //, action: "close_5")
-		}
         
-        standardTile("contact_6", "device.contact_6", width: 1, height: 1, canChangeIcon: true) {
-			state("closed", label:'6', icon:"st.contact.contact.closed", backgroundColor:"#79b821")  //, action: "open_6")
-			state("open", label:'6', icon:"st.contact.contact.open", backgroundColor:"#bc2323")  //, action: "close_6")
+		multiAttributeTile(name:"richcontact", type:"generic", width:6, height:4) {
+ 			tileAttribute("device.controller", key: "PRIMARY_CONTROL") {
+  		  	attributeState("off", label: 'Off', icon:"st.Seasonal Fall.seasonal-fall-008", action: "off", backgroundColor:"#ffffff")
+  		  	attributeState("on", label: 'AutoTemp', icon:"st.Weather.weather2", action: "off", backgroundColor:"#53a7c0")
+            }
+  			tileAttribute("device.fridgeTemp", key: "SECONDARY_CONTROL") {
+ 			   attributeState("default", label:'${currentValue}°', unit:"F")
+            }
 		}
-        
-        standardTile("contact_13", "device.contact_13", width: 1, height: 1, canChangeIcon: true) {
-			state("closed", label:'13', icon:"st.contact.contact.closed", backgroundColor:"#79b821") //, action: "open_13")
-			state("open", label:'3', icon:"st.contact.contact.open", backgroundColor:"#bc2323") //, action: "close_13")
-		}
-  
-        standardTile("contact_19", "device.contact_19", width: 1, height: 1, canChangeIcon: true) {
-			state("closed", label:'19', icon:"st.contact.contact.closed", backgroundColor:"#79b821") //, action: "open_19")
-			state("open", label:'19', icon:"st.contact.contact.open", backgroundColor:"#bc2323") //, action: "close_19")
-		}
-        
-        standardTile("motion", "device.motion", width: 1, height: 1) {
-        	state("active", label: "${state}", icon:"st.contact.contact.closed", backgroundColor: "#79b821")
-            state("inactive", label: "${state}", icon:"st.contact.contact.open", backgroundColor: "#bc2323")
+  		standardTile("restart", "device.restart", inactiveLabel: false, decoration: "flat") {
+        	state "default", action:"restart", icon: "st.Seasonal Fall.seasonal-fall-009", label: "Restart", displayName: "Restart"
         }
-  
-		standardTile("restart", "device.restart", inactiveLabel: false, decoration: "flat") {
-        	state "default", action:"restart", label: "Restart", displayName: "Restart"
-        }
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+        standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
         	state "default", action:"refresh.refresh", icon: "st.secondary.refresh"
         }
-        main "button"
-          details(["button", "temperature", "cpuPercentage", "memory" , "diskUsage", "restart", "refresh", "contact_5", "contact_6", "contact_13", "contact_19", "motion"])
-
-
+        main "temperature"
+        details(["richcontact", "switch", "SW1", "refresh", "fridge", "temperature", "fridgeHumid", "cpuTemperature", "cpuPercentage", "memory", "diskUsage", "restart"])
     }
 }
 
@@ -166,6 +176,7 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
+	log.trace "Parse returned rpi"
     def map = [:]
     def descMap = parseDescriptionAsMap(description)
     log.debug "descMap: ${descMap}"
@@ -178,26 +189,28 @@ def parse(String description) {
     
     log.debug "result: ${result}"
 
-//	if (result){
-    if ((result.gpio_value_5.contains("1")) && (result.gpio_value_6.contains("1")) && (result.gpio_value_13.contains("1")) && (result.gpio_value_19.contains("1"))) {
+	if (result){
     	log.debug "Computer is up"
-   		sendEvent(name: "switch", value: "on")
-    } else {
-    	sendEvent(name: "switch", value: "off")
-        log.debug "Computer is off"
-        }
+   		//sendEvent(name: "switch", value: "on")
+    }
     
     log.debug "check temp..."
     if (result.containsKey("cpu_temp")) {
     	log.debug "temp: ${result.cpu_temp.toDouble().round()}"
-        log.debug "temp: ${celsiusToFahrenheit(result.cpu_temp.toDouble().round())} F"
-    	sendEvent(name: "temperature", value: celsiusToFahrenheit(result.cpu_temp.toDouble().round()))
+    	sendEvent(name: "cpuTemperature", value: result.cpu_temp.toDouble().round())
     }
-    
+    if (result.containsKey("fr_humid")) {
+    	log.debug "fridgeHumid: ${result.fr_humid.toDouble().round()}"
+    	sendEvent(name: "fridgeHumid", value: result.fr_humid.toDouble().round())
+    }    
+	if (result.containsKey("fr_temp")) {
+    	log.debug "fridgetemp: ${result.fr_temp.toDouble().round()}"
+    	sendEvent(name: "temperature", value: result.fr_temp.toDouble().round())
+    	sendEvent(name: "fridgeTemp", value: result.fr_temp.toDouble().round())
+    }    
     if (result.containsKey("cpu_perc")) {
     	log.debug "cpu_perc: ${result.cpu_perc}"
         sendEvent(name: "cpuPercentage", value: result.cpu_perc)
-//        sendEvent(name: "switch", value: "on")
     }
     
     if (result.containsKey("mem_avail")) {
@@ -208,110 +221,144 @@ def parse(String description) {
     	log.debug "disk_usage: ${result.disk_usage.toDouble().round()}"
         sendEvent(name: "diskUsage", value: result.disk_usage.toDouble().round())
     }
-  	if (result.containsKey("gpio_value_5")) {
-    	log.debug "gpio_value_5: ${result.gpio_value_5}"  //.toDouble().round()}"
-        if (result.gpio_value_5.contains("0")){
-        	log.debug "gpio_value_5: open"
-            sendEvent(name: "contact_5", value: "open")
-        } else if (result.gpio_value_5.contains("1")){
-        	log.debug "gpio_value_5: closed"
-            sendEvent(name: "contact_5", value: "closed")
+  	if (result.containsKey("gpio_value_17")) {
+    	log.debug "gpio_value_17: ${result.gpio_value_17}"
+        if (result.gpio_value_17.contains("0")){
+        	log.debug "gpio_value_17: off"
+            sendEvent(name: "SW1", value: "off")
+        } else {
+        	log.debug "gpio_value_17: on"
+            sendEvent(name: "SW1", value: "on")
         }
     }
-    
-  	if (result.containsKey("gpio_value_6")) {
-    	log.debug "gpio_value_6: ${result.gpio_value_6}"  //.toDouble().round()}"
-        if (result.gpio_value_6.contains("0")){
-        	log.debug "gpio_value_6: open"
-            sendEvent(name: "contact_6", value: "open")
-        } else if (result.gpio_value_6.contains("1")){
-        	log.debug "gpio_value_6: closed"
-            sendEvent(name: "contact_6", value: "closed")
+  	if (result.containsKey("gpio_value_21")) {
+    	log.debug "gpio_value_21: ${result.gpio_value_21}"
+        if (result.gpio_value_21.contains("0")){
+        	log.debug "gpio_value_21: on"
+            sendEvent(name: "controller", value: "on")
+        } else {
+        	log.debug "gpio_value_21: off"
+            sendEvent(name: "controller", value: "off")
         }
-    }
-    
-  	if (result.containsKey("gpio_value_13")) {
-    	log.debug "gpio_value_13: ${result.gpio_value_13}"  //.toDouble().round()}"
-        if (result.gpio_value_13.contains("0")){
-        	log.debug "gpio_value_13: open"
-            sendEvent(name: "contact_13", value: "open")
-        } else if (result.gpio_value_6.contains("1")){
-        	log.debug "gpio_value_13: closed"
-            sendEvent(name: "contact_13", value: "closed")
-        }
-    }    
-    
-  	if (result.containsKey("gpio_value_19")) {
-    	log.debug "gpio_value_19: ${result.gpio_value_19}"  //.toDouble().round()}"
-        if (result.gpio_value_6.contains("0")){
-        	log.debug "gpio_value_19: open"
-            sendEvent(name: "contact_19", value: "open")
-        } else if (result.gpio_value_19.contains("1")){
-        	log.debug "gpio_value_19: closed"
-            sendEvent(name: "contact_19", value: "closed")
-        }
-    }
-        
-  	if (result.containsKey("gpio_value_26")) {
-    	log.debug "gpio_value_26: ${result.gpio_value_26}"  //.toDouble().round()}"
-        if (result.gpio_value_26.contains("0")){
-        	log.debug "gpio_value_26: Not-Active"
-            sendEvent(name: "motion", value: "inactive")
-        } else if (result.gpio_value_26.contains("1")){
-        	log.debug "gpio_value_26: Active"
-            sendEvent(name: "motion", value: "active")
-        }
-    }
+    }  	
 }
 
 // handle commands
 def poll() {
 	log.debug "Executing 'poll'"
-//    sendEvent(name: "switch", value: "off")
+    //sendEvent(name: "switch", value: "off")
     getRPiData()
 }
-/*
-def open_5() {
-	log.debug "Executing 'open 5'"
-    sendEvent(name: "gpio_value_5", value: "0")
-//	def uri = "/api_command/gpio_set_value/5/0"
-//    postAction(uri)
-	getRPiData()
-}
 
-def close_5() {
-	log.debug "Executing 'Close 5'"
-    sendEvent(name: "gpio_value_5", value: "1")
-//    def uri = "/api_command/gpio_set_value/5/1"
-	getRPiData()
-//	postAction(uri)
-}
-/*
-def open_6() {
-	log.debug "Executing 'open 6'"
-    sendEvent(name: "gpio_value_6", value: "0")
-//	def uri = "/api_command/gpio_set_value/6/0"
-//    postAction(uri)
-	getRPiData()
-}
+def on() {
+	def fridgeState = device.currentState("fridge")
+    log.debug "FridgeState: $fridgeState.value"
+    if (fridgeState.value.contains("on")){
+		sendEvent(name: "fridge", value: "off")
+		log.debug "Turning fridge off."
+    	def uri = "/api_command/gpio_set_mode/24/out"
+    	def uri2 = "/api_command/gpio_set_value/24/0"
+        
+/*        def uri = "/api_command/gpio_set_mode/21/out"
+    	def uri2 = "/api_command/gpio_set_value/21/0"
+        */
+    	postAction(uri)    
+   		postAction(uri2) 
+	}
+    else {
+		sendEvent(name: "fridge", value: "on")
+    	log.debug "Turning fridge on."
+    	def uri = "/api_command/gpio_set_mode/24/out"
+    	def uri2 = "/api_command/gpio_set_value/24/1"
 
-def close_6() {
-	log.debug "Executing 'Close 6'"
-    sendEvent(name: "gpio_value_6", value: "1")
-//    def uri = "/api_command/gpio_set_value/18}/1"
-//    postAction(uri)
-	getRPiData()
-}
+/*		def uri = "/api_command/gpio_set_mode/21/out"
+    	def uri2 = "/api_command/gpio_set_value/21/1"
 */
+		postAction(uri)    
+   		postAction(uri2)    
+    }
+}
+def off() {
+	def fridgeState = device.currentState("controller")
+    log.debug "FridgeState: $fridgeState.value"
+    if (fridgeState.value.contains("on")){
+		sendEvent(name: "controller", value: "off")
+		log.debug "WARNING: Turning fridge auto temp control off."
+
+    	def uri = "/api_command/gpio_set_mode/24/out"
+    	def uri2 = "/api_command/gpio_set_value/24/1"
+		postAction(uri)    
+   		postAction(uri2) 
+	}
+    else {
+		sendEvent(name: "controller", value: "on")
+    	log.debug "Turning fridge auto temp control on."
+
+		def uri = "/api_command/gpio_set_mode/24/out"
+    	def uri2 = "/api_command/gpio_set_value/24/0"
+		postAction(uri)    
+   		postAction(uri2)    
+    }
+}
+
+
+def SW1_on() {
+	def SW1State = device.currentState("SW1")
+//    log.debug "FridgeState: $fridgeState.value"
+    if (SW1State.value.contains("on")){
+		sendEvent(name: "SW1", value: "off")
+		log.debug "Turning fridge off."
+    	def uri = "/api_command/gpio_set_mode/17/out"
+    	def uri2 = "/api_command/gpio_set_value/17/0"
+        
+    	postAction(uri)    
+   		postAction(uri2) 
+	}
+    else {
+		sendEvent(name: "SW1", value: "on")
+    	log.debug "Turning fridge on."
+    	def uri = "/api_command/gpio_set_mode/17/out"
+    	def uri2 = "/api_command/gpio_set_value/17/1"
+        
+		postAction(uri)    
+   		postAction(uri2)    
+    }
+}
+
+
+def SW1_off() {
+	def SW1State = device.currentState("SW1")
+    log.debug "SW1_off"
+    if (SW1State.value.contains("on")){
+		sendEvent(name: "SW1", value: "off")
+		log.debug "WARNING: Turning fridge auto temp control off."
+
+    	def uri = "/api_command/gpio_set_mode/17/out"
+    	def uri2 = "/api_command/gpio_set_value/17/1"
+		postAction(uri)    
+   		postAction(uri2) 
+	}
+    else {
+		sendEvent(name: "SW1", value: "on")
+//    	log.debug "Turning SW1 on."
+
+		def uri = "/api_command/gpio_set_mode/17/out"
+    	def uri2 = "/api_command/gpio_set_value/17/0"
+		postAction(uri)    
+   		postAction(uri2)    
+    }
+}
+
 def refresh() {
-//	sendEvent(name: "switch", value: "off")
+	//sendEvent(name: "switch", value: "off")
 	log.debug "Executing 'refresh'"
-    getRPiData()
+	def uri = "/api_command/smartthings"
+    postAction(uri)
 }
 
 def restart(){
 	log.debug "Restart was pressed"
-//    sendEvent(name: "switch", value: "off")
+    //sendEvent(name: "switch", value: "off")
     def uri = "/api_command/reboot"
     postAction(uri)
 }
@@ -339,7 +386,7 @@ private postAction(uri){
     headers: headers
   )//,delayAction(1000), refresh()]
   log.debug("Executing hubAction on " + getHostAddress())
-  log.debug hubAction
+  //log.debug hubAction
   hubAction    
 }
 
@@ -383,7 +430,7 @@ private getHeader(userpass){
     def headers = [:]
     headers.put("HOST", getHostAddress())
     headers.put("Authorization", userpass)
-    //log.debug "Headers are ${headers}"
+    log.debug "Headers are ${headers}"
     return headers
 }
 
@@ -395,7 +442,7 @@ private setDeviceNetworkId(ip,port){
   	def iphex = convertIPtoHex(ip)
   	def porthex = convertPortToHex(port)
   	device.deviceNetworkId = "$iphex:$porthex"
-  	log.debug "Device Network Id set to ${iphex}:${porthex}"
+  	log.trace "Device Network Id set to ${iphex}:${porthex}"
 }
 
 private getHostAddress() {
