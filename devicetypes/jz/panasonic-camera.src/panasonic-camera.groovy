@@ -3,9 +3,9 @@
  *
  *  Source code can be found here: https://github.com/JZ-SmartThings/SmartThings/blob/master/Devices/Panasonic%20PTZ%20Camera/PanasonicPTZCamera.groovy
  *
- *  Copyright 2016 JZ
+ *  Copyright 2017 JZ
  *
- *  Tested with Panasonic BL-C30A
+ *  Tested with Panasonic BL-C30A, BB-HCM511A, BB-HCM531A
  *  Thanks to: patrickstuart & blebson
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -91,7 +91,7 @@ metadata {
 
 def take() {
 	log.debug "Taking picture"
-	cameraCmd("/SnapshotJPEG?Resolution=320x240&Quality=Motion")
+	cameraCmd("/SnapshotJPEG?Resolution=640x480")
 }
 def home() {
 	log.debug "Moving to Home position"
@@ -182,18 +182,14 @@ def parse(String description) {
     def map = [:]
 	def retResult = []
 	def descMap = parseDescriptionAsMap(description)
-    log.info "bucket '${descMap.bucket}'"
-    log.info "key '${descMap.key}'"
-    
-	//Image
-//	if (descMap["bucket"] && descMap["key"]) {
-  	if (descMap["key"]) {
-//		putImageInS3(descMap)
+    def imageKey = descMap["tempImageKey"] ? descMap["tempImageKey"] : descMap["key"]
+	if (imageKey) {
 		try {
-        	storeTemporaryImage(descMap.key,getPictureName())
-        } catch(Exception e) {
-        	log.error e
-        }
+			storeTemporaryImage(imageKey, getPictureName()) 
+		}
+		catch (Exception e) {
+			log.error e
+		}
 	}
     else if (descMap["headers"] && descMap["body"]){
     	def body = new String(descMap["body"].decodeBase64())
@@ -203,28 +199,7 @@ def parse(String description) {
 		log.debug "PARSE FAILED FOR: '${description}'"
     }
 }
-/*
-def putImageInS3(map) {
-	log.debug "firing s3"
-    def s3ObjectContent
-    try {
-        def imageBytes = getS3Object(map.bucket, map.key + ".jpg")
-        if(imageBytes)
-        {
-            s3ObjectContent = imageBytes.getObjectContent()
-            def bytes = new ByteArrayInputStream(s3ObjectContent.bytes)
-            storeImage(getPictureName(), bytes)
-        }
-    }
-    catch(Exception e) {
-        log.error e
-    }
-	finally {
-    //Explicitly close the stream
-		if (s3ObjectContent) { s3ObjectContent.close() }
-	}
-}
-*/
+
 def parseDescriptionAsMap(description) {
 	description.split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
